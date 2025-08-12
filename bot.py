@@ -51,7 +51,7 @@ NUM_PAD_SALARY=[
     ["1", "2", "3"],
     ["4", "5", "6"],
     ["7", "8", "9"],
-    ["0", "00", "000"],
+    [".", "0", "Очистить"],
     ["Пропустить", "Подтвердить"],
     ["❌ Отмена"]
 ]
@@ -584,12 +584,14 @@ async def confirm_time_input(update: Update, context: ContextTypes.DEFAULT_TYPE,
 async def prompt_salary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Запрос ввода зарплаты"""
     context.user_data["salary_buffer"]=""  # Инициализируем буфер для зарплаты
+
+    # Сохраняем ID сообщения с инструкцией, чтобы его обновлять
     msg=await update.message.reply_text(
         f"{EMOJI['salary']} Введи гонорар в рублях:\n"
-        "Например: 10000 или 7500",
+        "Используй цифровую клавиатуру",
         reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
     )
-    context.user_data["to_delete"].append(msg.message_id)
+    context.user_data["salary_message_id"]=msg.message_id
     return TYPING_SALARY
 
 
@@ -600,14 +602,41 @@ async def enter_salary(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Проверка на отмену
         if "❌" in text or "отмена" in text:
+            # Удаляем сообщение пользователя
+            await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+            # Удаляем сообщение с инструкцией если есть
+            if "salary_message_id" in context.user_data:
+                await safe_delete_message(context, update.effective_chat.id, context.user_data["salary_message_id"])
             return await cancel(update, context)
 
-        # Удаляем сообщение пользователя для чистоты интерфейса
-        await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+        # НЕ удаляем сообщение пользователя до подтверждения
 
         if text == "пропустить":
+            # Удаляем сообщения при пропуске
+            await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+            if "salary_message_id" in context.user_data:
+                await safe_delete_message(context, update.effective_chat.id, context.user_data["salary_message_id"])
             context.user_data["salary"]=None
             return await save_shift_data(update, context)
+
+        if text == "очистить":
+            # Очищаем буфер
+            context.user_data["salary_buffer"]=""
+            # Удаляем сообщение с командой очистки
+            await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
+            # Обновляем основное сообщение
+            if "salary_message_id" in context.user_data:
+                try:
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=context.user_data["salary_message_id"],
+                        text=f"{EMOJI['salary']} Введи гонорар в рублях:\n"
+                             "Используй цифровую клавиатуру"
+                    )
+                except:
+                    pass
+            return TYPING_SALARY
 
         if text == "подтвердить":
             # Обрабатываем накопленный буфер
@@ -616,43 +645,91 @@ async def enter_salary(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 try:
                     value=int(buffer_value)
                     if value<0:
-                        await update.message.reply_text(
-                            f"{EMOJI['warning']} Гонорар не может быть отрицательным.",
-                            reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
-                        )
+                        # Удаляем сообщение с подтверждением
+                        await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
+                        # Обновляем сообщение с ошибкой
+                        if "salary_message_id" in context.user_data:
+                            try:
+                                await context.bot.edit_message_text(
+                                    chat_id=update.effective_chat.id,
+                                    message_id=context.user_data["salary_message_id"],
+                                    text=f"{EMOJI['warning']} Гонорар не может быть отрицательным.\n"
+                                         "Введите новую сумму:"
+                                )
+                            except:
+                                pass
                         context.user_data["salary_buffer"]=""
                         return TYPING_SALARY
+
+                    # Удаляем все сообщения при успешном подтверждении
+                    await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+                    if "salary_message_id" in context.user_data:
+                        await safe_delete_message(context, update.effective_chat.id,
+                                                  context.user_data["salary_message_id"])
 
                     context.user_data["salary"]=value
                     return await save_shift_data(update, context)
                 except ValueError:
-                    await update.message.reply_text(
-                        f"{EMOJI['warning']} Введи число в рублях.",
-                        reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
-                    )
+                    # Удаляем сообщение с подтверждением
+                    await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
+                    # Обновляем сообщение с ошибкой
+                    if "salary_message_id" in context.user_data:
+                        try:
+                            await context.bot.edit_message_text(
+                                chat_id=update.effective_chat.id,
+                                message_id=context.user_data["salary_message_id"],
+                                text=f"{EMOJI['warning']} Неверный формат суммы.\n"
+                                     "Введите число:"
+                            )
+                        except:
+                            pass
                     context.user_data["salary_buffer"]=""
                     return TYPING_SALARY
             else:
-                await update.message.reply_text(
-                    f"{EMOJI['warning']} Введите сумму или нажмите 'Пропустить'.",
-                    reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
-                )
+                # Удаляем сообщение с подтверждением
+                await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
+                # Обновляем сообщение
+                if "salary_message_id" in context.user_data:
+                    try:
+                        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=context.user_data["salary_message_id"],
+                            text=f"{EMOJI['warning']} Введите сумму или нажмите 'Пропустить'."
+                        )
+                    except:
+                        pass
                 return TYPING_SALARY
 
-        # Если это цифры - добавляем к буферу
-        if text in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "000"]:
+        # Если это цифры или точка - добавляем к буферу
+        if text in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]:
             if "salary_buffer" not in context.user_data:
                 context.user_data["salary_buffer"]=""
 
+            # Удаляем сообщение с цифрой
+            await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
             context.user_data["salary_buffer"]+=text
 
-            # Показываем текущее значение
+            # Обновляем основное сообщение с текущей суммой
             current_value=context.user_data["salary_buffer"]
-            await update.message.reply_text(
-                f"Текущая сумма: {current_value} ₽\n"
-                f"Нажмите 'Подтвердить' для сохранения или продолжайте ввод.",
-                reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
-            )
+            if "salary_message_id" in context.user_data:
+                try:
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=context.user_data["salary_message_id"],
+                        text=f"{EMOJI['salary']} Текущая сумма: {current_value} ₽\n"
+                             f"Нажмите 'Подтвердить' для сохранения"
+                    )
+                except:
+                    # Если не удалось отредактировать, отправляем новое
+                    msg=await update.message.reply_text(
+                        f"{EMOJI['salary']} Текущая сумма: {current_value} ₽\n"
+                        f"Нажмите 'Подтвердить' для сохранения"
+                    )
+                    context.user_data["salary_message_id"]=msg.message_id
             return TYPING_SALARY
 
         # Если это не команда и не цифра, пробуем обработать как обычный ввод
@@ -662,20 +739,44 @@ async def enter_salary(update: Update, context: ContextTypes.DEFAULT_TYPE):
             value=float(cleaned_text.replace(",", "."))
 
             if value<0:
-                await update.message.reply_text(
-                    f"{EMOJI['warning']} Гонорар не может быть отрицательным.",
-                    reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
-                )
+                # Удаляем сообщение пользователя
+                await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
+                # Обновляем основное сообщение
+                if "salary_message_id" in context.user_data:
+                    try:
+                        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=context.user_data["salary_message_id"],
+                            text=f"{EMOJI['warning']} Гонорар не может быть отрицательным.\n"
+                                 "Используйте цифровую клавиатуру"
+                        )
+                    except:
+                        pass
                 return TYPING_SALARY
+
+            # Удаляем сообщения при успешном вводе
+            await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+            if "salary_message_id" in context.user_data:
+                await safe_delete_message(context, update.effective_chat.id, context.user_data["salary_message_id"])
 
             context.user_data["salary"]=int(value)
             return await save_shift_data(update, context)
 
         except ValueError:
-            await update.message.reply_text(
-                f"{EMOJI['warning']} Используйте цифровую клавиатуру или введите число.",
-                reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
-            )
+            # Удаляем сообщение пользователя
+            await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
+            # Обновляем основное сообщение
+            if "salary_message_id" in context.user_data:
+                try:
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=context.user_data["salary_message_id"],
+                        text=f"{EMOJI['warning']} Используйте цифровую клавиатуру или введите число."
+                    )
+                except:
+                    pass
             return TYPING_SALARY
 
     except Exception as e:

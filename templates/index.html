@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои смены</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #2e2e2e;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border: 1px solid #444;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3a3a3a;
+        }
+
+        .months {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .months a {
+            color: #ffffff;
+            background-color: #444;
+            padding: 8px 12px;
+            margin: 2px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .months a.active {
+            background-color: #0066cc;
+        }
+
+        .total {
+            text-align: right;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗓️ Мои смены</h1>
+    <div class="months">
+        {% for m in range(1, 13) %}
+            <a href="/?month={{ m }}" class="{{ 'active' if selected_month == m else '' }}">{{ m }} месяц</a>
+        {% endfor %}
+        <a href="/" class="{{ 'active' if not selected_month else '' }}">Все месяцы</a>
+    </div>
+
+    {% if shifts %}
+        <table>
+            <tr>
+                <th>Дата</th>
+                <th>Роль</th>
+                <th>Программа</th>
+                <th>Время</th>
+                <th>Гонорар</th>
+            </tr>
+            {% for s in shifts %}
+                <tr>
+                    <td>{{ s["date"].strftime("%d.%m.%Y") if s["date"] else "" }}</td>
+                    <td>{{ s["role"] or "" }}</td>
+                    <td>{{ s["program"] or "" }}</td>
+                    <td>
+                        {% if s["start_time"] == "Весь день" %}
+                            Весь день
+                        {% elif s["start_time"] and s["end_time"] %}
+                            {{ s["start_time"] }}–{{ s["end_time"] }}
+                        {% elif s["start_time"] %}
+                            с {{ s["start_time"] }}
+                        {% elif s["end_time"] %}
+                            до {{ s["end_time"] }}
+                        {% endif %}
+                    </td>
+                    <td>{{ "{:,.0f}".format(s["salary"]).replace(",", " ") + " ₽" if s["salary"] else "" }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <div class="total">💰 Сумма за месяц: {{ total_salary }} ₽</div>
+    {% else %}
+        <p>Смен за выбранный месяц нет.</p>
+    {% endif %}
+</body>
+</html>

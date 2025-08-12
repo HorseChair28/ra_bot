@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env
+
+# База данных
+*.db
+*.sqlite3
+shifts.db
+
+# Логи
+*.log
+bot.log
+
+# Конфиг с токенами
+config.py
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Временные файлы
+*.tmp
+misc.txt

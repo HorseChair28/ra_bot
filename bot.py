@@ -696,6 +696,13 @@ async def show_shifts_by_month(update: Update, context: ContextTypes.DEFAULT_TYP
                     filtered_shifts.append(shift)
             shifts=filtered_shifts
 
+        # Сортируем смены: старые сверху, новые снизу
+        if shifts:
+            shifts.sort(key=lambda s: (
+                s.get("date") or date.min,  # Сначала по дате (старые сверху)
+                s.get("start_time") or "00:00"  # Потом по времени (раннее сверху)
+            ))
+
         if not shifts:
             month_names={
                 1: "январь", 2: "февраль", 3: "март", 4: "апрель",
@@ -1067,9 +1074,19 @@ async def handle_edit_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             updated_shift=next((s for s in shifts if s['id'] == shift_id), None)
 
             if updated_shift:
+                # Показываем обновленную смену с кнопками для дальнейшего редактирования
+                formatted_text=format_shift_display(updated_shift)
+
+                edit_buttons=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("✏ Изменить еще", callback_data=f"edit_{shift_id}"),
+                        InlineKeyboardButton("❌ Удалить", callback_data=f"delete_{shift_id}")
+                    ]
+                ])
+
                 await update.message.reply_text(
-                    f"{EMOJI['success']} Поле обновлено!\n\n{format_shift_display(updated_shift)}",
-                    reply_markup=get_main_menu_keyboard()
+                    f"{EMOJI['success']} Поле обновлено!\n\n{formatted_text}",
+                    reply_markup=edit_buttons
                 )
             else:
                 await update.message.reply_text(

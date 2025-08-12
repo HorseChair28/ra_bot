@@ -2,105 +2,678 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мои смены</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учет рабочих смен</title>
     <style>
-        body {
-            background-color: #1e1e1e;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            padding: 20px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #f0f6fc;
+            padding: 5px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        .btn-primary {
+            background: #238636;
+            border-color: #238636;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #2ea043;
+            border-color: #2ea043;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: #8b949e;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #f0f6fc;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .filters-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .filters-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f0f6fc;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .form-control {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #58a6ff;
+            background: #21262d;
+        }
+
+        .form-control:hover {
+            border-color: #8b949e;
+        }
+
+        .table-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #21262d;
+            border-bottom: 1px solid #30363d;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-container {
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background-color: #2e2e2e;
-            margin-bottom: 20px;
-        }
-
-        th, td {
-            padding: 10px 12px;
-            border: 1px solid #444;
-            text-align: left;
         }
 
         th {
-            background-color: #3a3a3a;
+            background: #21262d;
+            color: #f0f6fc;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid #30363d;
+            position: sticky;
+            top: 0;
         }
 
-        .months {
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #21262d;
+            vertical-align: middle;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #21262d;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+
+        .badge-role {
+            background: rgba(31, 111, 235, 0.15);
+            color: #58a6ff;
+            border-color: rgba(31, 111, 235, 0.4);
+        }
+
+        .badge-program {
+            background: rgba(163, 113, 247, 0.15);
+            color: #d2a8ff;
+            border-color: rgba(163, 113, 247, 0.4);
+        }
+
+        .time-range {
+            color: #e6edf3;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        .salary {
+            color: #7c3aed;
+            font-weight: 600;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        .date {
+            color: #8b949e;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        .user-id {
+            color: #8b949e;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 12px;
+        }
+
+        .no-data {
             text-align: center;
-            margin-bottom: 20px;
+            padding: 48px 24px;
+            color: #8b949e;
+            background: #0d1117;
         }
 
-        .months a {
-            color: #ffffff;
-            background-color: #444;
-            padding: 8px 12px;
-            margin: 2px;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-block;
+        .no-data-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.6;
         }
 
-        .months a.active {
-            background-color: #0066cc;
+        .loading {
+            color: #58a6ff;
         }
 
-        .total {
-            text-align: right;
-            font-size: 1.2em;
-            margin-top: 10px;
+        .error {
+            color: #f85149;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header-container {
+                padding: 0 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 4px 12px;
+                font-size: 12px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 12px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+
+        /* Selection */
+        ::selection {
+            background: rgba(31, 111, 235, 0.4);
         }
     </style>
 </head>
 <body>
-    <h1>🗓️ Мои смены</h1>
-    <div class="months">
-        {% for m in range(1, 13) %}
-            <a href="/?month={{ m }}" class="{{ 'active' if selected_month == m else '' }}">{{ m }} месяц</a>
-        {% endfor %}
-        <a href="/" class="{{ 'active' if not selected_month else '' }}">Все месяцы</a>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-container">
+            <h1>
+                📊 Учет рабочих смен
+            </h1>
+            <div class="header-actions">
+                <button class="btn" onclick="loadData()">
+                    🔄 Обновить
+                </button>
+                <a href="/api/shifts" class="btn" target="_blank">
+                    📡 API
+                </a>
+                <a href="/health" class="btn btn-primary" target="_blank">
+                    ✅ Health
+                </a>
+            </div>
+        </div>
     </div>
 
-    {% if shifts %}
-        <table>
-            <tr>
-                <th>Дата</th>
-                <th>Роль</th>
-                <th>Программа</th>
-                <th>Время</th>
-                <th>Гонорар</th>
-            </tr>
-            {% for s in shifts %}
-                <tr>
-                    <td>{{ s["date"].strftime("%d.%m.%Y") if s["date"] else "" }}</td>
-                    <td>{{ s["role"] or "" }}</td>
-                    <td>{{ s["program"] or "" }}</td>
-                    <td>
-                        {% if s["start_time"] == "Весь день" %}
-                            Весь день
-                        {% elif s["start_time"] and s["end_time"] %}
-                            {{ s["start_time"] }}–{{ s["end_time"] }}
-                        {% elif s["start_time"] %}
-                            с {{ s["start_time"] }}
-                        {% elif s["end_time"] %}
-                            до {{ s["end_time"] }}
-                        {% endif %}
-                    </td>
-                    <td>{{ "{:,.0f}".format(s["salary"]).replace(",", " ") + " ₽" if s["salary"] else "" }}</td>
-                </tr>
-            {% endfor %}
-        </table>
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalShifts">0</div>
+                <div class="stat-label">📋 Всего смен</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalSalary">0₽</div>
+                <div class="stat-label">💰 Общий доход</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgSalary">0₽</div>
+                <div class="stat-label">📊 Средний доход</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalUsers">0</div>
+                <div class="stat-label">👥 Пользователей</div>
+            </div>
+        </div>
 
-        <div class="total">💰 Сумма за месяц: {{ total_salary }} ₽</div>
-    {% else %}
-        <p>Смен за выбранный месяц нет.</p>
-    {% endif %}
+        <!-- Filters -->
+        <div class="filters-section">
+            <div class="filters-title">
+                🔍 Фильтры
+            </div>
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label" for="userFilter">Пользователь</label>
+                    <select id="userFilter" class="form-control">
+                        <option value="">Все пользователи</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="monthFilter">Месяц</label>
+                    <select id="monthFilter" class="form-control">
+                        <option value="">Все месяцы</option>
+                        <option value="1">Январь</option>
+                        <option value="2">Февраль</option>
+                        <option value="3">Март</option>
+                        <option value="4">Апрель</option>
+                        <option value="5">Май</option>
+                        <option value="6">Июнь</option>
+                        <option value="7">Июль</option>
+                        <option value="8">Август</option>
+                        <option value="9">Сентябрь</option>
+                        <option value="10">Октябрь</option>
+                        <option value="11">Ноябрь</option>
+                        <option value="12">Декабрь</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="roleFilter">Роль</label>
+                    <select id="roleFilter" class="form-control">
+                        <option value="">Все роли</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="programFilter">Программа</label>
+                    <select id="programFilter" class="form-control">
+                        <option value="">Все программы</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">
+                    📝 Смены
+                </div>
+                <div style="color: #8b949e; font-size: 14px;" id="tableCounter">
+                    Загрузка...
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>📅 Дата</th>
+                            <th>🛠️ Роль</th>
+                            <th>📺 Программа</th>
+                            <th>⏰ Время</th>
+                            <th>💰 Гонорар</th>
+                            <th>👤 Пользователь</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shiftsTable">
+                        <tr>
+                            <td colspan="6" class="no-data loading">
+                                <div class="no-data-icon">⏳</div>
+                                <div>Загрузка данных...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allShifts = [];
+        let filteredShifts = [];
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU');
+        }
+
+        function formatSalary(salary) {
+            if (!salary) return '-';
+            return new Intl.NumberFormat('ru-RU').format(salary) + '₽';
+        }
+
+        function formatTime(startTime, endTime) {
+            if (!startTime && !endTime) return '-';
+            if (startTime && endTime) return `${startTime}–${endTime}`;
+            if (startTime) return `с ${startTime}`;
+            if (endTime) return `до ${endTime}`;
+        }
+
+        function formatUserId(userId) {
+            if (!userId) return '-';
+            return userId.length > 12 ? userId.substring(0, 12) + '...' : userId;
+        }
+
+        function updateFilters() {
+            // Обновляем фильтр пользователей
+            const userFilter = document.getElementById('userFilter');
+            const users = [...new Set(allShifts.map(shift => shift.user_id))];
+            userFilter.innerHTML = '<option value="">Все пользователи</option>';
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                option.textContent = formatUserId(user);
+                userFilter.appendChild(option);
+            });
+
+            // Обновляем фильтр ролей
+            const roleFilter = document.getElementById('roleFilter');
+            const roles = [...new Set(allShifts.map(shift => shift.role).filter(Boolean))];
+            roleFilter.innerHTML = '<option value="">Все роли</option>';
+            roles.forEach(role => {
+                const option = document.createElement('option');
+                option.value = role;
+                option.textContent = role;
+                roleFilter.appendChild(option);
+            });
+
+            // Обновляем фильтр программ
+            const programFilter = document.getElementById('programFilter');
+            const programs = [...new Set(allShifts.map(shift => shift.program).filter(Boolean))];
+            programFilter.innerHTML = '<option value="">Все программы</option>';
+            programs.forEach(program => {
+                const option = document.createElement('option');
+                option.value = program;
+                option.textContent = program;
+                programFilter.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const userFilter = document.getElementById('userFilter').value;
+            const monthFilter = document.getElementById('monthFilter').value;
+            const roleFilter = document.getElementById('roleFilter').value;
+            const programFilter = document.getElementById('programFilter').value;
+
+            filteredShifts = allShifts.filter(shift => {
+                // Фильтр по пользователю
+                if (userFilter && shift.user_id !== userFilter) return false;
+
+                // Фильтр по месяцу
+                if (monthFilter && shift.date) {
+                    const shiftMonth = new Date(shift.date).getMonth() + 1;
+                    if (shiftMonth !== parseInt(monthFilter)) return false;
+                }
+
+                // Фильтр по роли
+                if (roleFilter && shift.role !== roleFilter) return false;
+
+                // Фильтр по программе
+                if (programFilter && shift.program !== programFilter) return false;
+
+                return true;
+            });
+
+            updateTable();
+            updateStats();
+        }
+
+        function updateStats() {
+            const totalShifts = filteredShifts.length;
+            const totalSalary = filteredShifts.reduce((sum, shift) => sum + (shift.salary || 0), 0);
+            const avgSalary = totalShifts > 0 ? Math.round(totalSalary / totalShifts) : 0;
+            const totalUsers = new Set(filteredShifts.map(shift => shift.user_id)).size;
+
+            document.getElementById('totalShifts').textContent = totalShifts;
+            document.getElementById('totalSalary').textContent = formatSalary(totalSalary);
+            document.getElementById('avgSalary').textContent = formatSalary(avgSalary);
+            document.getElementById('totalUsers').textContent = totalUsers;
+
+            // Обновляем счетчик в заголовке таблицы
+            document.getElementById('tableCounter').textContent =
+                `${totalShifts} смен${totalShifts === 1 ? 'а' : totalShifts < 5 ? 'ы' : ''}`;
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('shiftsTable');
+
+            if (filteredShifts.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data">
+                            <div class="no-data-icon">📭</div>
+                            <div>Нет данных для отображения</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Сортируем смены по дате (старые сверху), затем по времени начала
+            const sortedShifts = [...filteredShifts].sort((a, b) => {
+                // Сначала по дате (старые сверху)
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateA.getTime() - dateB.getTime(); // ASC - старые сверху
+                }
+
+                // Если даты одинаковые, сортируем по времени начала
+                const timeA = a.start_time || '00:00';
+                const timeB = b.start_time || '00:00';
+
+                return timeA.localeCompare(timeB); // ASC - раннее время сверху
+            });
+
+            tbody.innerHTML = sortedShifts.map(shift => `
+                <tr>
+                    <td class="date">${formatDate(shift.date)}</td>
+                    <td>${shift.role ? `<span class="badge badge-role">${shift.role}</span>` : '-'}</td>
+                    <td>${shift.program ? `<span class="badge badge-program">${shift.program}</span>` : '-'}</td>
+                    <td class="time-range">${formatTime(shift.start_time, shift.end_time)}</td>
+                    <td class="salary">${formatSalary(shift.salary)}</td>
+                    <td class="user-id">${formatUserId(shift.user_id)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('/api/shifts');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                allShifts = await response.json();
+                filteredShifts = [...allShifts];
+
+                updateFilters();
+                updateTable();
+                updateStats();
+
+                console.log(`Загружено ${allShifts.length} смен`);
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+                document.getElementById('shiftsTable').innerHTML =
+                    `<tr><td colspan="6" class="no-data error">
+                        <div class="no-data-icon">❌</div>
+                        <div>Ошибка при загрузке данных</div>
+                        <div style="font-size: 12px; margin-top: 8px;">Проверьте подключение к серверу</div>
+                    </td></tr>`;
+            }
+        }
+
+        // Добавляем обработчики событий для фильтров
+        document.getElementById('userFilter').addEventListener('change', applyFilters);
+        document.getElementById('monthFilter').addEventListener('change', applyFilters);
+        document.getElementById('roleFilter').addEventListener('change', applyFilters);
+        document.getElementById('programFilter').addEventListener('change', applyFilters);
+
+        // Загружаем данные при загрузке страницы
+        window.addEventListener('load', loadData);
+    </script>
 </body>
 </html>

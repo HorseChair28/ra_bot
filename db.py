@@ -1,10 +1,14 @@
 import sqlite3
+from datetime import datetime
+from typing import List, Dict, Any
 
-DB_PATH = "shifts.db"
+DB_PATH="shifts.db"
+
 
 def init_db():
-    with sqlite3.connect("shifts.db") as conn:
-        cursor = conn.cursor()
+    """Инициализация базы данных"""
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor=conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS shifts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,7 +18,8 @@ def init_db():
                 program TEXT,
                 start_time TEXT,
                 end_time TEXT,
-                salary INTEGER
+                salary INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         conn.commit()
@@ -22,46 +27,131 @@ def init_db():
 
 def save_shift(user_id, shift_data):
     """Сохраняет смену"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT INTO shifts (user_id, date, role, program, start_time, end_time, salary)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        user_id,
-        shift_data.get("date"),
-        shift_data.get("role"),
-        shift_data.get("program"),
-        shift_data.get("start_time"),
-        shift_data.get("end_time"),
-        shift_data.get("salary")
-    ))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor=conn.cursor()
+        cursor.execute("""
+            INSERT INTO shifts (user_id, date, role, program, start_time, end_time, salary)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            shift_data.get("date").isoformat() if shift_data.get("date") else None,
+            shift_data.get("role"),
+            shift_data.get("program"),
+            shift_data.get("start_time"),
+            shift_data.get("end_time"),
+            shift_data.get("salary")
+        ))
+        conn.commit()
 
 
 def get_user_shifts(user_id):
-    """Возвращает список смен пользователя в виде словарей"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # позволяет обращаться по ключам
-    cursor = conn.cursor()
+    """Возвращает список смен пользователя"""
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory=sqlite3.Row
+        cursor=conn.cursor()
+        cursor.execute("""
+            SELECT id, user_id, date, role, program, start_time, end_time, salary, created_at
+            FROM shifts 
+            WHERE user_id = ? 
+            ORDER BY date DESC, start_time DESC
+        """, (user_id,))
+        rows=cursor.fetchall()
 
-    cursor.execute("SELECT * FROM shifts WHERE user_id = ?", (user_id,))
-    rows = cursor.fetchall()
+        shifts=[]
+        for row in rows:
+            shift=dict(row)
+            # Конвертируем строку даты в объект date для бота
+            if shift.get('date'):
+                try:
+                    shift['date']=datetime.fromisoformat(shift['date']).date()
+                except:
+                    shift['date']=None
+            shifts.append(shift)
 
-    conn.close()
+        return shifts
 
-    return [dict(row) for row in rows]  # превращаем Row в словари
+
+def get_all_shifts() -> List[Dict[str, Any]]:
+    """Возвращает все смены из базы данных (для веб-интерфейса)"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory=sqlite3.Row
+            cursor=conn.cursor()
+            cursor.execute("""
+                SELECT id, user_id, date, role, program, start_time, end_time, salary, created_at
+                FROM shifts
+                ORDER BY date DESC, start_time DESC
+            """)
+            rows=cursor.fetchall()
+
+            shifts=[]
+            for row in rows:
+                shift=dict(row)
+                # Оставляем дату как строку для JSON API
+                # НЕ конвертируем в date объект
+                shifts.append(shift)
+
+            print(f"[DEBUG] get_all_shifts вернула {len(shifts)} смен")
+            return shifts
+
+    except Exception as e:
+        print(f"Ошибка при получении всех смен: {e}")
+        return []
 
 
 def delete_shift(user_id, shift_id):
     """Удаляет смену по ID"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor=conn.cursor()
+        cursor.execute("DELETE FROM shifts WHERE user_id = ? AND id = ?", (user_id, shift_id))
+        conn.commit()
+        return cursor.rowcount>0
 
-    cursor.execute("DELETE FROM shifts WHERE user_id = ? AND id = ?", (user_id, shift_id))
-    conn.commit()
-    success = cursor.rowcount > 0
-    conn.close()
-    return success
+
+def update_shift(user_id: str, shift_id: int, field: str, value: Any) -> bool:
+    """Обновление поля смены"""
+    try:
+        if field == 'date' and value:
+            value=value.isoformat()
+
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(f'''
+                UPDATE shifts SET {field} = ? WHERE id = ? AND user_id = ?
+            ''', (value, shift_id, user_id))
+            conn.commit()
+        return True
+    except Exception as e:
+        print(f"Ошибка при обновлении смены: {e}")
+        return False
+
+
+def get_statistics() -> Dict[str, Any]:
+    """Получение статистики по всем сменам"""
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor=conn.execute('''
+                SELECT 
+                    COUNT(*) as total_shifts,
+                    COUNT(DISTINCT user_id) as total_users,
+                    SUM(salary) as total_salary,
+                    AVG(salary) as avg_salary
+                FROM shifts
+                WHERE salary IS NOT NULL
+            ''')
+
+            row=cursor.fetchone()
+            return {
+                'total_shifts': row[0] or 0,
+                'total_users': row[1] or 0,
+                'total_salary': row[2] or 0,
+                'avg_salary': round(row[3] or 0)
+            }
+
+    except Exception as e:
+        print(f"Ошибка при получении статистики: {e}")
+        return {
+            'total_shifts': 0,
+            'total_users': 0,
+            'total_salary': 0,
+            'avg_salary': 0
+        }

@@ -111,17 +111,30 @@ def delete_shift(user_id, shift_id):
 def update_shift(user_id: str, shift_id: int, field: str, value: Any) -> bool:
     """Обновление поля смены"""
     try:
-        if field == 'date' and value:
-            value=value.isoformat()
+        # Специальная обработка для поля date
+        if field == 'date':
+            if value and hasattr(value, 'isoformat'):
+                # Если передан объект date, конвертируем в строку
+                value=value.isoformat()
+            # Если передана строка или None - оставляем как есть
 
         with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(f'''
-                UPDATE shifts SET {field} = ? WHERE id = ? AND user_id = ?
-            ''', (value, shift_id, user_id))
+            # Используем параметризованный запрос для безопасности
+            query=f'UPDATE shifts SET {field} = ? WHERE id = ? AND user_id = ?'
+            cursor=conn.execute(query, (value, shift_id, user_id))
             conn.commit()
-        return True
+
+            if cursor.rowcount>0:
+                print(f"[DEBUG] Успешно обновлено поле {field} = {value} для смены {shift_id}")
+                return True
+            else:
+                print(f"[ERROR] Смена {shift_id} не найдена или не принадлежит пользователю {user_id}")
+                return False
+
     except Exception as e:
         print(f"Ошибка при обновлении смены: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 

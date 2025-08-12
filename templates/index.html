@@ -303,37 +303,201 @@
             color: #f85149;
         }
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #8b949e;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #30363d;
+            color: #f0f6fc;
+        }
+
+        .form-row {
+            margin-bottom: 16px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #30363d;
+        }
+
+        .btn-danger {
+            background: #da3633;
+            border-color: #da3633;
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            background: #b62324;
+            border-color: #b62324;
+        }
+
+        .btn-secondary {
+            background: #21262d;
+            border-color: #30363d;
+            color: #f0f6fc;
+        }
+
+        .btn-secondary:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .btn-edit {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+        }
+
+        .btn-edit:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+
+        .btn-delete {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #f85149;
+        }
+
+        .btn-delete:hover {
+            background: #da3633;
+            border-color: #da3633;
+            color: #ffffff;
+        }
+
+        .current-shift-display {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .shift-field {
+            margin-bottom: 8px;
+            color: #e6edf3;
+        }
+
+        .shift-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .field-icon {
+            display: inline-block;
+            width: 20px;
+            margin-right: 8px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
                 padding: 16px;
             }
-
+            
             .header-container {
                 padding: 0 16px;
             }
-
+            
             .stats-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .filters-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .header-actions {
                 gap: 8px;
             }
-
+            
             .btn {
                 padding: 4px 12px;
                 font-size: 12px;
             }
-
+            
             table {
                 font-size: 12px;
             }
-
+            
             th, td {
                 padding: 8px 12px;
             }
@@ -419,7 +583,7 @@
                         <option value="">Все пользователи</option>
                     </select>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label" for="monthFilter">Месяц</label>
                     <select id="monthFilter" class="form-control">
@@ -438,14 +602,14 @@
                         <option value="12">Декабрь</option>
                     </select>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label" for="roleFilter">Роль</label>
                     <select id="roleFilter" class="form-control">
                         <option value="">Все роли</option>
                     </select>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label" for="programFilter">Программа</label>
                     <select id="programFilter" class="form-control">
@@ -475,11 +639,12 @@
                             <th>⏰ Время</th>
                             <th>💰 Гонорар</th>
                             <th>👤 Пользователь</th>
+                            <th>⚙️ Действия</th>
                         </tr>
                     </thead>
                     <tbody id="shiftsTable">
                         <tr>
-                            <td colspan="6" class="no-data loading">
+                            <td colspan="7" class="no-data loading">
                                 <div class="no-data-icon">⏳</div>
                                 <div>Загрузка данных...</div>
                             </td>
@@ -487,6 +652,81 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ Редактировать смену</h3>
+                <button class="close-btn" onclick="hideEditModal()">&times;</button>
+            </div>
+
+            <div class="current-shift-display" id="currentShiftDisplay">
+                <!-- Текущие данные смены -->
+            </div>
+
+            <form onsubmit="saveShift(); return false;">
+                <div class="form-row">
+                    <label class="form-label" for="editDate">📅 Дата (YYYY-MM-DD)</label>
+                    <input type="date" id="editDate" class="form-control">
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="editRole">🛠️ Роль</label>
+                    <select id="editRole" class="form-control">
+                        <option value="">Не указана</option>
+                        <option value="РЕЖ">РЕЖ</option>
+                        <option value="ЭКРАНЫ">ЭКРАНЫ</option>
+                        <option value="EVS">EVS</option>
+                        <option value="VMIX">VMIX</option>
+                        <option value="ОПЕРАТОР">ОПЕРАТОР</option>
+                        <option value="ОПЕРПОСТ">ОПЕРПОСТ</option>
+                        <option value="СВЕТ">СВЕТ</option>
+                        <option value="ГРИМ">ГРИМ</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="editProgram">📺 Программа</label>
+                    <select id="editProgram" class="form-control">
+                        <option value="">Не указана</option>
+                        <option value="ЛЧ">ЛЧ</option>
+                        <option value="ЛЕ">ЛЕ</option>
+                        <option value="ЛК">ЛК</option>
+                        <option value="ЛИГА 1">ЛИГА 1</option>
+                        <option value="БУНДЕСЛИГА">БУНДЕСЛИГА</option>
+                        <option value="ММА">ММА</option>
+                        <option value="КУБОГНЯ">КУБОГНЯ</option>
+                        <option value="ФИГУРКА">ФИГУРКА</option>
+                        <option value="БИАТЛОН">БИАТЛОН</option>
+                        <option value="РПЛ">РПЛ</option>
+                        <option value="LALIGA">LALIGA</option>
+                        <option value="ТУРДЕФРАНС">ТУРДЕФРАНС</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="editStartTime">⏰ Время начала (HH:MM)</label>
+                    <input type="time" id="editStartTime" class="form-control">
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="editEndTime">⏱️ Время окончания (HH:MM)</label>
+                    <input type="time" id="editEndTime" class="form-control">
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label" for="editSalary">💰 Гонорар (в рублях)</label>
+                    <input type="number" id="editSalary" class="form-control" min="0" placeholder="10000">
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideEditModal()">❌ Отмена</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -561,19 +801,19 @@
             filteredShifts = allShifts.filter(shift => {
                 // Фильтр по пользователю
                 if (userFilter && shift.user_id !== userFilter) return false;
-
+                
                 // Фильтр по месяцу
                 if (monthFilter && shift.date) {
                     const shiftMonth = new Date(shift.date).getMonth() + 1;
                     if (shiftMonth !== parseInt(monthFilter)) return false;
                 }
-
+                
                 // Фильтр по роли
                 if (roleFilter && shift.role !== roleFilter) return false;
-
+                
                 // Фильтр по программе
                 if (programFilter && shift.program !== programFilter) return false;
-
+                
                 return true;
             });
 
@@ -591,19 +831,19 @@
             document.getElementById('totalSalary').textContent = formatSalary(totalSalary);
             document.getElementById('avgSalary').textContent = formatSalary(avgSalary);
             document.getElementById('totalUsers').textContent = totalUsers;
-
+            
             // Обновляем счетчик в заголовке таблицы
-            document.getElementById('tableCounter').textContent =
+            document.getElementById('tableCounter').textContent = 
                 `${totalShifts} смен${totalShifts === 1 ? 'а' : totalShifts < 5 ? 'ы' : ''}`;
         }
 
         function updateTable() {
             const tbody = document.getElementById('shiftsTable');
-
+            
             if (filteredShifts.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="no-data">
+                        <td colspan="7" class="no-data">
                             <div class="no-data-icon">📭</div>
                             <div>Нет данных для отображения</div>
                         </td>
@@ -617,15 +857,15 @@
                 // Сначала по дате (старые сверху)
                 const dateA = a.date ? new Date(a.date) : new Date(0);
                 const dateB = b.date ? new Date(b.date) : new Date(0);
-
+                
                 if (dateA.getTime() !== dateB.getTime()) {
                     return dateA.getTime() - dateB.getTime(); // ASC - старые сверху
                 }
-
+                
                 // Если даты одинаковые, сортируем по времени начала
                 const timeA = a.start_time || '00:00';
                 const timeB = b.start_time || '00:00';
-
+                
                 return timeA.localeCompare(timeB); // ASC - раннее время сверху
             });
 
@@ -637,6 +877,16 @@
                     <td class="time-range">${formatTime(shift.start_time, shift.end_time)}</td>
                     <td class="salary">${formatSalary(shift.salary)}</td>
                     <td class="user-id">${formatUserId(shift.user_id)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-edit" onclick="editShift(${shift.id})" title="Редактировать">
+                                ✏️
+                            </button>
+                            <button class="btn btn-sm btn-delete" onclick="deleteShift(${shift.id})" title="Удалить">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -649,16 +899,16 @@
                 }
                 allShifts = await response.json();
                 filteredShifts = [...allShifts];
-
+                
                 updateFilters();
                 updateTable();
                 updateStats();
-
+                
                 console.log(`Загружено ${allShifts.length} смен`);
             } catch (error) {
                 console.error('Ошибка при загрузке данных:', error);
-                document.getElementById('shiftsTable').innerHTML =
-                    `<tr><td colspan="6" class="no-data error">
+                document.getElementById('shiftsTable').innerHTML = 
+                    `<tr><td colspan="7" class="no-data error">
                         <div class="no-data-icon">❌</div>
                         <div>Ошибка при загрузке данных</div>
                         <div style="font-size: 12px; margin-top: 8px;">Проверьте подключение к серверу</div>
@@ -674,6 +924,177 @@
 
         // Загружаем данные при загрузке страницы
         window.addEventListener('load', loadData);
+
+        // Редактирование и удаление смен
+        let currentEditingShift = null;
+
+        function editShift(shiftId) {
+            const shift = allShifts.find(s => s.id === shiftId);
+            if (!shift) {
+                alert('Смена не найдена');
+                return;
+            }
+
+            currentEditingShift = { ...shift };
+            showEditModal();
+        }
+
+        function deleteShift(shiftId) {
+            if (!confirm('Вы уверены, что хотите удалить эту смену?')) {
+                return;
+            }
+
+            const shift = allShifts.find(s => s.id === shiftId);
+            if (!shift) {
+                alert('Смена не найдена');
+                return;
+            }
+
+            // API запрос на удаление
+            fetch(`/api/shifts/${shiftId}?user_id=${encodeURIComponent(shift.user_id)}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Смена успешно удалена!');
+                    loadData(); // Перезагружаем данные
+                } else {
+                    alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка при удалении смены: ' + error.message);
+            });
+        }
+
+        function showEditModal() {
+            if (!currentEditingShift) return;
+
+            const modal = document.getElementById('editModal');
+            const shift = currentEditingShift;
+
+            // Заполняем текущие данные
+            updateCurrentShiftDisplay();
+
+            // Заполняем поля формы
+            document.getElementById('editDate').value = shift.date || '';
+            document.getElementById('editRole').value = shift.role || '';
+            document.getElementById('editProgram').value = shift.program || '';
+            document.getElementById('editStartTime').value = shift.start_time || '';
+            document.getElementById('editEndTime').value = shift.end_time || '';
+            document.getElementById('editSalary').value = shift.salary || '';
+
+            modal.classList.add('show');
+        }
+
+        function hideEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('show');
+            currentEditingShift = null;
+        }
+
+        function updateCurrentShiftDisplay() {
+            if (!currentEditingShift) return;
+
+            const display = document.getElementById('currentShiftDisplay');
+            const shift = currentEditingShift;
+            
+            display.innerHTML = `
+                <div class="shift-field">
+                    <span class="field-icon">📅</span>
+                    <strong>Дата:</strong> ${shift.date ? formatDate(shift.date) : 'Не указана'}
+                </div>
+                <div class="shift-field">
+                    <span class="field-icon">🛠️</span>
+                    <strong>Роль:</strong> ${shift.role || 'Не указана'}
+                </div>
+                <div class="shift-field">
+                    <span class="field-icon">📺</span>
+                    <strong>Программа:</strong> ${shift.program || 'Не указана'}
+                </div>
+                <div class="shift-field">
+                    <span class="field-icon">⏰</span>
+                    <strong>Время:</strong> ${formatTime(shift.start_time, shift.end_time)}
+                </div>
+                <div class="shift-field">
+                    <span class="field-icon">💰</span>
+                    <strong>Гонорар:</strong> ${formatSalary(shift.salary)}
+                </div>
+                <div class="shift-field">
+                    <span class="field-icon">👤</span>
+                    <strong>Пользователь:</strong> ${shift.user_id}
+                </div>
+            `;
+        }
+
+        function saveShift() {
+            if (!currentEditingShift) return;
+
+            // Собираем данные из формы
+            const updatedData = {
+                user_id: currentEditingShift.user_id, // Обязательный параметр
+                date: document.getElementById('editDate').value || null,
+                role: document.getElementById('editRole').value || null,
+                program: document.getElementById('editProgram').value || null,
+                start_time: document.getElementById('editStartTime').value || null,
+                end_time: document.getElementById('editEndTime').value || null,
+                salary: document.getElementById('editSalary').value ? parseInt(document.getElementById('editSalary').value) : null
+            };
+
+            // Показываем индикатор загрузки
+            const saveBtn = document.querySelector('#editModal .btn-primary');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '💾 Сохраняем...';
+            saveBtn.disabled = true;
+
+            // API запрос на сохранение
+            fetch(`/api/shifts/${currentEditingShift.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+
+                if (data.success) {
+                    alert('Смена успешно сохранена!');
+                    hideEditModal();
+                    loadData(); // Перезагружаем данные
+                } else {
+                    alert('Ошибка при сохранении: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+                alert('Ошибка при сохранении смены: ' + error.message);
+            });
+        }
+
+        // Закрытие модального окна по клику вне его
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                hideEditModal();
+            }
+        });
+
+        // Закрытие по Escape
+        window.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                hideEditModal();
+            }
+        });
     </script>
 </body>
 </html>

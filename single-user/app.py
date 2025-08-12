@@ -1,8 +1,66 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-from db import get_all_shifts, get_statistics, update_shift, delete_shift
 from datetime import datetime
 import traceback
+import sqlite3
+import os
+
+# Определяем пути
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'shifts.db')
+
+# Функции для работы с БД (вместо импорта из db.py)
+def get_all_shifts():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.execute('''
+        SELECT * FROM shifts 
+        ORDER BY date DESC, start_time DESC
+    ''')
+    shifts = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return shifts
+
+def get_statistics():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.execute('''
+        SELECT COUNT(*) as total, SUM(salary) as total_salary 
+        FROM shifts
+    ''')
+    stats = dict(cursor.fetchone())
+    conn.close()
+    return stats
+
+def update_shift(user_id, shift_id, field, value):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(f'''
+            UPDATE shifts SET {field} = ? 
+            WHERE id = ? AND user_id = ?
+        ''', (value, shift_id, user_id))
+        conn.commit()
+        affected = conn.total_changes
+        conn.close()
+        return affected > 0
+    except Exception as e:
+        print(f"Ошибка обновления: {e}")
+        return False
+
+def delete_shift(user_id, shift_id):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('''
+            DELETE FROM shifts 
+            WHERE id = ? AND user_id = ?
+        ''', (shift_id, user_id))
+        conn.commit()
+        affected = conn.total_changes
+        conn.close()
+        return affected > 0
+    except Exception as e:
+        print(f"Ошибка удаления: {e}")
+        return False
+
 
 app=Flask(__name__)
 CORS(app)  # Разрешаем CORS для API

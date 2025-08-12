@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 from typing import List, Dict, Any
 
-DB_PATH="shifts.db"
+DB_PATH="../shifts.db"
 
 
 def init_db():

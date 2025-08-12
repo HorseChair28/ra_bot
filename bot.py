@@ -43,10 +43,23 @@ NUM_PAD=[
     ["4", "5", "6"],
     ["7", "8", "9"],
     [":", "0", "."],
-    ["Пропустить", "Подтвердить"]
+    ["Пропустить", "Подтвердить"],
+    ["❌ Отмена"]
+]
+
+NUM_PAD_SALARY=[
+    ["1", "2", "3"],
+    ["4", "5", "6"],
+    ["7", "8", "9"],
+    ["0", "00", "000"],
+    ["Пропустить", "Подтвердить"],
+    ["❌ Отмена"]
 ]
 
 SKIP_BUTTON=["Пропустить"]
+CANCEL_BUTTON=["❌ Отмена"]
+SKIP_AND_CANCEL=["Пропустить", "❌ Отмена"]
+
 ROLE_BUTTONS=["РЕЖ", "ЭКРАНЫ", "EVS", "VMIX", "ОПЕРАТОР", "ОПЕРПОСТ", "СВЕТ", "ГРИМ"]
 PROGRAM_BUTTONS=[
     "ЛЧ", "ЛЕ", "ЛК", "ЛИГА 1", "БУНДЕСЛИГА", "ММА",
@@ -174,11 +187,21 @@ db=ShiftDatabase()
 
 
 # ====== Вспомогательные функции ======
-def create_keyboard(buttons: List[str], row_width: int = 3, skip_button: bool = True) -> ReplyKeyboardMarkup:
+def create_keyboard(buttons: List[str], row_width: int = 3, skip_button: bool = True,
+                    cancel_button: bool = True) -> ReplyKeyboardMarkup:
     """Создание клавиатуры из кнопок"""
     keyboard=[buttons[i:i + row_width] for i in range(0, len(buttons), row_width)]
+
+    # Добавляем кнопки пропустить и отмена
+    bottom_row=[]
     if skip_button:
-        keyboard.append(SKIP_BUTTON)
+        bottom_row.append("Пропустить")
+    if cancel_button:
+        bottom_row.append("❌ Отмена")
+
+    if bottom_row:
+        keyboard.append(bottom_row)
+
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
 
 
@@ -191,6 +214,14 @@ def clean_time_input(text: str) -> Optional[str]:
     if len(digits) == 4:
         return f"{digits[:2]}:{digits[2:]}"
     return None
+
+
+def clean_salary_input(text: str) -> Optional[str]:
+    """Очистка ввода зарплаты от лишних символов"""
+    if not text:
+        return None
+    # Убираем все кроме цифр
+    return re.sub(r"[^\d]", "", text)
 
 
 def validate_time(time_str: str) -> bool:
@@ -305,7 +336,8 @@ async def start_shift_creation(update: Update, context: ContextTypes.DEFAULT_TYP
         date_buttons=[
             ["Сегодня", "Завтра"],
             ["Послезавтра", "Вчера"],
-            ["Своя дата", "Пропустить"]
+            ["Своя дата", "Пропустить"],
+            ["❌ Отмена"]
         ]
 
         msg=await update.message.reply_text(
@@ -330,6 +362,11 @@ async def select_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка выбора даты"""
     try:
         user_input=update.message.text.lower().strip()
+
+        # Проверка на отмену
+        if "❌" in user_input or "отмена" in user_input:
+            return await cancel(update, context)
+
         today=date.today()
         selected_date=None
 
@@ -346,7 +383,8 @@ async def select_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif "своя" in user_input:
             await update.message.reply_text(
                 f"{EMOJI['info']} Введи дату в формате ДД.ММ или ДДММ\n"
-                "Например: 15.03 или 1503"
+                "Например: 15.03 или 1503",
+                reply_markup=ReplyKeyboardMarkup([CANCEL_BUTTON], resize_keyboard=True)
             )
             return SELECT_DATE
         else:
@@ -360,20 +398,23 @@ async def select_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                     if not validate_date(selected_date):
                         await update.message.reply_text(
-                            f"{EMOJI['warning']} Дата слишком далеко в прошлом или будущем. Попробуй еще раз."
+                            f"{EMOJI['warning']} Дата слишком далеко в прошлом или будущем. Попробуй еще раз.",
+                            reply_markup=ReplyKeyboardMarkup([CANCEL_BUTTON], resize_keyboard=True)
                         )
                         return SELECT_DATE
 
                 except ValueError:
                     await update.message.reply_text(
                         f"{EMOJI['warning']} Неверная дата. Попробуй еще раз.\n"
-                        "Пример: 15.03 или 1503"
+                        "Пример: 15.03 или 1503",
+                        reply_markup=ReplyKeyboardMarkup([CANCEL_BUTTON], resize_keyboard=True)
                     )
                     return SELECT_DATE
             else:
                 await update.message.reply_text(
                     f"{EMOJI['warning']} Введи 4 цифры: день и месяц.\n"
-                    "Пример: 1503 для 15 марта"
+                    "Пример: 1503 для 15 марта",
+                    reply_markup=ReplyKeyboardMarkup([CANCEL_BUTTON], resize_keyboard=True)
                 )
                 return SELECT_DATE
 
@@ -398,6 +439,11 @@ async def select_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка выбора роли"""
     try:
         role=update.message.text.strip()
+
+        # Проверка на отмену
+        if "❌" in role or "отмена" in role.lower():
+            return await cancel(update, context)
+
         context.user_data["role"]=None if role.lower() == "пропустить" else role
 
         msg=await update.message.reply_text(
@@ -420,10 +466,14 @@ async def select_program(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         program=update.message.text.strip()
 
+        # Проверка на отмену
+        if "❌" in program or "отмена" in program.lower():
+            return await cancel(update, context)
+
         if program == "СВОЙ ВАРИАНТ":
             await update.message.reply_text(
                 f"{EMOJI['program']} Введи название программы:",
-                reply_markup=ReplyKeyboardMarkup([SKIP_BUTTON], resize_keyboard=True)
+                reply_markup=ReplyKeyboardMarkup([SKIP_AND_CANCEL], resize_keyboard=True)
             )
             return SELECT_PROGRAM
 
@@ -454,6 +504,10 @@ async def handle_time_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         char=update.message.text.strip().lower()
         typing_type=context.user_data.get("typing", "start")
+
+        # Проверка на отмену
+        if "❌" in char or "отмена" in char:
+            return await cancel(update, context)
 
         # Удаляем сообщение пользователя для чистоты интерфейса
         await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
@@ -529,10 +583,11 @@ async def confirm_time_input(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
 async def prompt_salary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Запрос ввода зарплаты"""
+    context.user_data["salary_buffer"]=""  # Инициализируем буфер для зарплаты
     msg=await update.message.reply_text(
         f"{EMOJI['salary']} Введи гонорар в рублях:\n"
         "Например: 10000 или 7500",
-        reply_markup=ReplyKeyboardMarkup([SKIP_BUTTON], resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
     )
     context.user_data["to_delete"].append(msg.message_id)
     return TYPING_SALARY
@@ -543,27 +598,83 @@ async def enter_salary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         text=update.message.text.strip().lower()
 
+        # Проверка на отмену
+        if "❌" in text or "отмена" in text:
+            return await cancel(update, context)
+
+        # Удаляем сообщение пользователя для чистоты интерфейса
+        await safe_delete_message(context, update.effective_chat.id, update.message.message_id)
+
         if text == "пропустить":
             context.user_data["salary"]=None
             return await save_shift_data(update, context)
 
+        if text == "подтвердить":
+            # Обрабатываем накопленный буфер
+            buffer_value=context.user_data.get("salary_buffer", "")
+            if buffer_value:
+                try:
+                    value=int(buffer_value)
+                    if value<0:
+                        await update.message.reply_text(
+                            f"{EMOJI['warning']} Гонорар не может быть отрицательным.",
+                            reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
+                        )
+                        context.user_data["salary_buffer"]=""
+                        return TYPING_SALARY
+
+                    context.user_data["salary"]=value
+                    return await save_shift_data(update, context)
+                except ValueError:
+                    await update.message.reply_text(
+                        f"{EMOJI['warning']} Введи число в рублях.",
+                        reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
+                    )
+                    context.user_data["salary_buffer"]=""
+                    return TYPING_SALARY
+            else:
+                await update.message.reply_text(
+                    f"{EMOJI['warning']} Введите сумму или нажмите 'Пропустить'.",
+                    reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
+                )
+                return TYPING_SALARY
+
+        # Если это цифры - добавляем к буферу
+        if text in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "000"]:
+            if "salary_buffer" not in context.user_data:
+                context.user_data["salary_buffer"]=""
+
+            context.user_data["salary_buffer"]+=text
+
+            # Показываем текущее значение
+            current_value=context.user_data["salary_buffer"]
+            await update.message.reply_text(
+                f"Текущая сумма: {current_value} ₽\n"
+                f"Нажмите 'Подтвердить' для сохранения или продолжайте ввод.",
+                reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
+            )
+            return TYPING_SALARY
+
+        # Если это не команда и не цифра, пробуем обработать как обычный ввод
         try:
             # Убираем все кроме цифр и точки/запятой
-            cleaned_text=re.sub(r'[^\d.,]', '', update.message.text.strip())
+            cleaned_text=re.sub(r'[^\d.,]', '', text)
             value=float(cleaned_text.replace(",", "."))
 
             if value<0:
                 await update.message.reply_text(
-                    f"{EMOJI['warning']} Гонорар не может быть отрицательным."
+                    f"{EMOJI['warning']} Гонорар не может быть отрицательным.",
+                    reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
                 )
                 return TYPING_SALARY
 
-            context.user_data["salary"]=int(value)  # Сохраняем как есть в рублях
+            context.user_data["salary"]=int(value)
             return await save_shift_data(update, context)
 
         except ValueError:
             await update.message.reply_text(
-                f"{EMOJI['warning']} Введи число в рублях. Например: 10000 или 7500"
+                f"{EMOJI['warning']} Используйте цифровую клавиатуру или введите число.",
+                reply_markup=ReplyKeyboardMarkup(NUM_PAD_SALARY, resize_keyboard=True)
             )
             return TYPING_SALARY
 
@@ -841,12 +952,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 *Форматы ввода:*
 • Время: 1830 или 18:30
 • Дата: 1503 для 15.03
-• Гонорар: 10 или 7.5 (в тысячах рублей)
+• Гонорар: в рублях (10000 или 7500)
 
 *Управление сменами:*
 • Редактирование - изменить любое поле
 • Удаление - удалить смену
 • Экспорт - скачать все данные
+
+❌ *Кнопка "Отмена"* доступна на каждом шаге добавления смены
 
 По вопросам пишите @username
 """
@@ -1119,6 +1232,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{EMOJI['cancel']} Операция отменена.",
             reply_markup=get_main_menu_keyboard()
         )
+        context.user_data.clear()  # Очищаем все данные пользователя
         return ConversationHandler.END
     except Exception as e:
         logger.error(f"Ошибка в cancel: {e}")

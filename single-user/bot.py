@@ -12,7 +12,6 @@ from telegram.ext import (
 import re
 from config import TELEGRAM_TOKEN
 
-
 # ====== Настройка логирования ======
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -183,10 +182,8 @@ class ShiftDatabase:
             return False
 
 
-# Создаем экземпляр базы данных с правильным путем
-import os
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-db = ShiftDatabase(db_path=os.path.join(BASE_DIR, "shifts.db"))
+# Создаем экземпляр базы данных
+db=ShiftDatabase()
 
 
 # ====== Вспомогательные функции ======

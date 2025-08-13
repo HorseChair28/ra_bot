@@ -234,9 +234,9 @@ def health():
 
 if __name__ == "__main__":
     print("🚀 Запуск Flask сервера...")
-    print("🌐 Веб-интерфейс: http://localhost:8000")
-    print("📡 API: http://localhost:8000/api/shifts")
+    print("🌐 Веб-интерфейс: http://localhost:8008")
+    print("📡 API: http://localhost:8008/api/shifts")
     print("📝 Новые endpoints:")
     print("   PUT /api/shifts/<id> - обновить смену")
     print("   DELETE /api/shifts/<id> - удалить смену")
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8008)

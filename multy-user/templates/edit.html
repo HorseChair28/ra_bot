@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактировать смену</title>
+</head>
+<body style="background-color: #1e1e1e; color: #fff; font-family: Arial, sans-serif; padding: 20px;">
+    <h1>✏ Редактировать смену</h1>
+    <form action="/update/{{ shift['id'] }}" method="post">
+        <p><input name="date" value="{{ shift['date'].strftime('%d.%m.%Y') if shift['date'] else '' }}" placeholder="Дата (дд.мм.гггг)"></p>
+        <p><input name="role" value="{{ shift['role'] }}" placeholder="Роль"></p>
+        <p><input name="program" value="{{ shift['program'] }}" placeholder="Программа"></p>
+        <p><input name="start_time" value="{{ shift['start_time'] }}" placeholder="Начало"></p>
+        <p><input name="end_time" value="{{ shift['end_time'] }}" placeholder="Конец"></p>
+        <p><input name="salary" value="{{ shift['salary'] / 1000 if shift['salary'] else '' }}" placeholder="Гонорар (в тыс)"></p>
+        <p><button type="submit">Сохранить</button></p>
+    </form>
+</body>
+</html>

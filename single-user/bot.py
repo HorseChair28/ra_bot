@@ -1060,6 +1060,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • Удаление - удалить смену
 • Экспорт - скачать все данные
 
+ссылка на сайт
+http://uchetrabot.ru:8008
+
 ❌ *Кнопка "Отмена"* доступна на каждом шаге добавления смены
 
 По вопросам пишите @username

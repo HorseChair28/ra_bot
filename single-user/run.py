@@ -1,10 +1,10 @@
-# run.py - Главный скрипт для запуска всей системы
+# run.py - Исправленная версия
 import subprocess
 import sys
 import os
 import time
 import signal
-from threading import Thread
+from threading import Thread, Event
 import logging
 
 # Настройка логирования
@@ -12,13 +12,13 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger=logging.getLogger(__name__)
+logger=logging.getLogger('main')
 
 
 class ShiftTrackerRunner:
     def __init__(self):
         self.processes=[]
-        self.running=True
+        self.shutdown_event=Event()
 
     def start_bot(self):
         """Запуск Telegram бота"""
@@ -27,16 +27,25 @@ class ShiftTrackerRunner:
             process=subprocess.Popen(
                 [sys.executable, "bot.py"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1
             )
-            self.processes.append(process)
+            self.processes.append(('bot', process))
 
-            # Читаем вывод бота
-            for line in iter(process.stdout.readline, ''):
-                if line and self.running:
-                    print(f"[BOT] {line.strip()}")
+            # Неблокирующее чтение вывода
+            while not self.shutdown_event.is_set():
+                if process.poll() is not None:
+                    logger.warning("🤖 Бот завершился неожиданно")
+                    break
+
+                try:
+                    line=process.stdout.readline()
+                    if line:
+                        logger.info(f"[BOT] {line.strip()}")
+                except:
+                    break
+                time.sleep(0.1)
 
         except Exception as e:
             logger.error(f"Ошибка при запуске бота: {e}")
@@ -48,38 +57,79 @@ class ShiftTrackerRunner:
             process=subprocess.Popen(
                 [sys.executable, "app.py"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1
             )
-            self.processes.append(process)
+            self.processes.append(('web', process))
 
-            # Читаем вывод веб-сервера
-            for line in iter(process.stdout.readline, ''):
-                if line and self.running:
-                    print(f"[WEB] {line.strip()}")
+            # Неблокирующее чтение вывода
+            while not self.shutdown_event.is_set():
+                if process.poll() is not None:
+                    logger.warning("🌐 Веб-сервер завершился неожиданно")
+                    break
+
+                try:
+                    line=process.stdout.readline()
+                    if line:
+                        logger.info(f"[WEB] {line.strip()}")
+                except:
+                    break
+                time.sleep(0.1)
 
         except Exception as e:
             logger.error(f"Ошибка при запуске веб-сервера: {e}")
 
     def signal_handler(self, signum, frame):
         """Обработчик сигналов для корректного завершения"""
-        logger.info("\n⚠️  Получен сигнал завершения. Останавливаем сервисы...")
-        self.running=False
+        logger.info(f"⚠️  Получен сигнал {signum}. Останавливаем сервисы...")
+        self.shutdown_event.set()
         self.stop()
 
     def stop(self):
         """Остановка всех процессов"""
-        for process in self.processes:
-            if process.poll() is None:  # Проверяем, что процесс еще работает
-                logger.info(f"Останавливаем процесс PID: {process.pid}")
+        logger.info("🛑 Начинаем остановку процессов...")
+
+        for name, process in self.processes:
+            if process.poll() is None:  # Процесс еще работает
+                logger.info(f"Останавливаем {name} (PID: {process.pid})")
+
+                # Сначала пытаемся мягко завершить
                 process.terminate()
+
                 try:
+                    # Ждем 5 секунд на мягкое завершение
                     process.wait(timeout=5)
+                    logger.info(f"✅ {name} корректно завершен")
                 except subprocess.TimeoutExpired:
+                    # Если не помогло - убиваем принудительно
+                    logger.warning(f"⚡ Принудительно завершаем {name}")
                     process.kill()
+                    process.wait()
 
         logger.info("✅ Все процессы остановлены")
+        sys.exit(0)
+
+    def monitor_processes(self):
+        """Мониторинг процессов"""
+        while not self.shutdown_event.is_set():
+            dead_processes=[]
+            for name, process in self.processes:
+                if process.poll() is not None:
+                    dead_processes.append((name, process))
+
+            if dead_processes:
+                for name, process in dead_processes:
+                    logger.error(f"❌ Процесс {name} завершился с кодом {process.returncode}")
+                    self.processes.remove((name, process))
+
+                # Если все процессы упали - завершаемся
+                if not self.processes:
+                    logger.error("💥 Все процессы завершились, останавливаем систему")
+                    self.shutdown_event.set()
+                    break
+
+            time.sleep(5)  # Проверяем каждые 5 секунд
 
     def run(self):
         """Главный метод запуска"""
@@ -87,87 +137,39 @@ class ShiftTrackerRunner:
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
-        print("=" * 50)
-        print("🚀 ЗАПУСК СИСТЕМЫ УЧЕТА СМЕН")
-        print("=" * 50)
+        logger.info("=" * 50)
+        logger.info("🚀 ЗАПУСК СИСТЕМЫ УЧЕТА СМЕН")
+        logger.info("=" * 50)
 
-        # Создаем потоки для запуска процессов
-        bot_thread=Thread(target=self.start_bot, daemon=True)
-        web_thread=Thread(target=self.start_web, daemon=True)
+        # Создаем потоки (НЕ daemon!)
+        bot_thread=Thread(target=self.start_bot, name='BotThread')
+        web_thread=Thread(target=self.start_web, name='WebThread')
+        monitor_thread=Thread(target=self.monitor_processes, name='MonitorThread')
 
         # Запускаем потоки
         bot_thread.start()
         time.sleep(2)  # Небольшая задержка между запусками
         web_thread.start()
+        monitor_thread.start()
 
-        print("\n✅ Система запущена!")
-        print("📱 Telegram бот: работает")
-        print("🌐 Веб-интерфейс: http://localhost:5000")
-        print("\nДля остановки нажмите Ctrl+C\n")
-        print("-" * 50)
+        logger.info("✅ Система запущена!")
+        logger.info("📱 Telegram бот: работает")
+        logger.info("🌐 Веб-интерфейс: работает")
+        logger.info("Для остановки отправьте SIGTERM или SIGINT")
 
         try:
-            # Ждем завершения потоков
-            bot_thread.join()
-            web_thread.join()
+            # Ждем сигнала остановки
+            while not self.shutdown_event.is_set():
+                time.sleep(1)
         except KeyboardInterrupt:
-            pass
+            logger.info("Получен Ctrl+C")
+            self.signal_handler(signal.SIGINT, None)
         finally:
-            if self.running:
+            # Убеждаемся, что все остановлено
+            if not self.shutdown_event.is_set():
                 self.stop()
 
 
 if __name__ == "__main__":
     runner=ShiftTrackerRunner()
     runner.run()
-
-# ============================================
-# run_simple.py - Упрощенная версия
-# ============================================
-
-# !/usr/bin/env python3
-"""
-Простой скрипт для запуска бота и веб-сервера
-Использование: python run_simple.py
-"""
-
-import subprocess
-import os
-import sys
-import time
-
-
-def run():
-    print("🚀 Запуск системы учета смен...")
-    print("-" * 40)
-
-    # Запускаем бота в фоне
-    print("▶️  Запуск Telegram бота...")
-    bot_process=subprocess.Popen([sys.executable, "bot.py"])
-    time.sleep(2)
-
-    # Запускаем веб-сервер в фоне
-    print("▶️  Запуск веб-сервера...")
-    web_process=subprocess.Popen([sys.executable, "app.py"])
-
-    print("-" * 40)
-    print("✅ Система запущена!")
-    print("🌐 Веб-интерфейс: http://localhost:5000")
-    print("\n⚠️  Для остановки нажмите Ctrl+C")
-
-    try:
-        # Ждем завершения
-        bot_process.wait()
-        web_process.wait()
-    except KeyboardInterrupt:
-        print("\n\n🛑 Остановка системы...")
-        bot_process.terminate()
-        web_process.terminate()
-        print("✅ Система остановлена")
-        sys.exit(0)
-
-
-if __name__ == "__main__":
-    run()
-
-

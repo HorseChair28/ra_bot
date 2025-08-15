@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime, date, timedelta
 from typing import Optional, Dict, Any, List
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
     ConversationHandler, ContextTypes, CallbackQueryHandler
@@ -296,12 +296,43 @@ async def cleanup_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Получение главного меню"""
+    """Получение главного меню с кнопкой Mini App"""
     return ReplyKeyboardMarkup([
         ["Начать смену", "Мои смены"],
+        ["🌐 Открыть панель смен"],  # Это обычная кнопка
         ["Экспорт данных", "Помощь"]
     ], resize_keyboard=True)
 
+
+async def open_web_app(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Открыть веб-приложение (Mini App)"""
+    try:
+        # Создаем инлайн кнопку с Web App
+        web_app_button=InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                text="🌐 Открыть панель смен",
+                web_app=WebAppInfo(url="https://uchetrabot.ru")
+            )]
+        ])
+
+        await update.message.reply_text(
+            f"🚀 Нажмите кнопку ниже, чтобы открыть панель управления сменами прямо в Telegram!\n\n"
+            f"В веб-панели вы можете:\n"
+            f"📊 Просматривать статистику\n"
+            f"🔍 Фильтровать смены\n"
+            f"✏️ Редактировать данные\n"
+            f"📈 Анализировать доходы\n\n"
+            f"Все ваши данные синхронизированы с ботом.",
+            reply_markup=web_app_button
+        )
+
+    except Exception as e:
+        logger.error(f"Ошибка при открытии веб-приложения: {e}")
+        await update.message.reply_text(
+            f"❌ Ошибка при открытии веб-панели.\n"
+            f"Попробуйте перейти напрямую: http://uchetrabot.ru:8008",
+            reply_markup=get_main_menu_keyboard()
+        )
 
 # ====== Обработчики команд ======
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1346,12 +1377,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка кнопок главного меню"""
     try:
-        text=update.message.text
+        text = update.message.text
 
         if text == "Начать смену":
             return await start_shift_creation(update, context)
         elif text == "Мои смены":
             await list_shifts(update, context)
+        elif text == "🌐 Открыть панель смен":
+            await open_web_app(update, context)  # Новая обработка
         elif text == "Экспорт данных":
             await export_data(update, context)
         elif text == "Помощь":
@@ -1372,6 +1405,53 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_markup=get_main_menu_keyboard()
         )
 
+# Обновите функцию help_command(), добавив информацию о веб-панели:
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Помощь по использованию бота"""
+    help_text = f"""
+{EMOJI['info']} *Помощь по использованию бота*
+
+*Основные команды:*
+• Начать смену - добавить новую смену
+• Мои смены - посмотреть все смены
+• 🌐 Открыть панель смен - веб-интерфейс в Telegram
+• Экспорт данных - скачать данные в JSON
+• Помощь - это сообщение
+
+*Как добавить смену:*
+1. Выберите дату или введите свою
+2. Выберите роль (можно пропустить)
+3. Выберите программу
+4. Введите время начала и окончания
+5. Укажите гонорар
+
+*Форматы ввода:*
+• Время: 1830 или 18:30
+• Дата: 1503 для 15.03
+• Гонорар: в рублях (10000 или 7500)
+
+*Веб-панель:*
+🌐 В Mini App доступны:
+• 📊 Подробная статистика
+• 🔍 Фильтры по месяцам/ролям
+• ✏️ Быстрое редактирование
+• 📈 Анализ доходов
+• 🎯 Удобный интерфейс
+
+*Управление сменами:*
+• Редактирование - изменить любое поле
+• Удаление - удалить смену
+• Экспорт - скачать все данные
+
+⌨️ *Кнопка "Отмена"* доступна на каждом шаге добавления смены
+
+"""
+
+    await update.message.reply_text(
+        help_text,
+        parse_mode='Markdown',
+        reply_markup=get_main_menu_keyboard()
+    )
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Глобальный обработчик ошибок"""
